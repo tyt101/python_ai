@@ -71,7 +71,7 @@ try:
 except Exception as e:
     print("error：", e)
 finally:
-    print('不管有没有错误，我都会在最后执行')
+    print('不管有没有错误，我都会在最后执行test')
 
 
 # Python自带的异常类型:
