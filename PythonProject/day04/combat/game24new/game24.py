@@ -4,7 +4,7 @@
 from openai import OpenAI
 import os
 
-from day04.combat.game24new.game24_prompt import propose_prompt, value_prompt
+from game24_prompt import propose_prompt, value_prompt
 
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
 client = OpenAI(api_key=DASHSCOPE_API_KEY,
@@ -15,7 +15,21 @@ def chatgpt(prompt, model="qwen2.5-coder-3b-instruct") -> list:
     messages = [{"role": "user", "content": prompt}]
     outputs = []
     res = client.chat.completions.create(model=model, messages=messages)
-    # print('res:',res)
+    '''
+    choices=[
+        Choice(finish_reason='stop', index=0, logprobs=None, 
+            message=ChatCompletionMessage(
+                content='5 + 8 = 13 (left: 11 13)\n8 / 5 = 1.6 (left: 11 13)\n11 + 5 = 16 (left: 16 13)\n5 * 8 = 40 (left: 11 13 40)\n13 + 5 = 18 (left: 11 18 40)\n11 - 5 = 6 (left: 6 13 40)\n13 - 5 = 8 (left: 11 8 40)\n13 / 5 = 2.6 (left: 11 8 40)\n13 - 5 = 8 (left: 11 8 40)', 
+                refusal=None, 
+                role='assistant', 
+                annotations=None, 
+                audio=None, 
+                function_call=None, 
+                tool_calls=None
+            )
+        )
+    ]
+    '''
     outputs.extend([choice.message.content for choice in res.choices])
     print('outputs:',outputs)
     return outputs
@@ -38,12 +52,15 @@ def first_evaluate(proposals):
     values = []
     for proposal in proposals:
         #proposal形如 '5 + 8 = 13 (left: 11 13)\n'，取出 left和 )之间的数字
-        current_numbers = proposal.strip().split('\n')[-1].split('left: ')[-1].split(')')[0]
+        current_numbers = proposal.strip().split('\n')[-1].split('left: ')[-1].split(')')[0] # 提出来11 13
         print('first_evaluate_current_numbers:',current_numbers)
+
+        # 如果当前数字已经进行过评估了，则直接跳过
         if current_numbers in value_cache:
             values.append(0)
             print('continue loop and first_scores:', values)
             continue
+        # 否则进行评估
         value_outputs = chatgpt(value_prompt.format(input=current_numbers))
         print(value_outputs,'first_evaluate_value_outputs')
         print('first_evaluate_current_numbers_2：',current_numbers)
@@ -64,9 +81,13 @@ def first_evaluate(proposals):
 def first_screen(ids,values):
     # 根据预测结果选择前5个最有可能到达24的候选项
     # 按照评级排序下一步动作的index 并记录对应的下一步动作
+
+    # 按照评级高低对ids进行排序
     select_ids = sorted(ids, key=lambda i: values[i], reverse=True)[:5]
     select_proposals = [proposals[select_id] for select_id in select_ids]
     print('first_screen_select_proposals:', select_proposals)
+
+    # 返回前5个最有可能到达24的候选项
     return select_proposals
 
 #剩下3个数

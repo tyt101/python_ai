@@ -4,16 +4,14 @@
 from openai import OpenAI
 import gradio as gr
 import os
-import asyncio
 
-from const import TONGYI_MAX_MODEL
 
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
 client = OpenAI(api_key=DASHSCOPE_API_KEY,
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",)
 
 # 按钮绑定了函数，将用户提示和对应内容传进去
-def coach_student(qa1, qa2, qa3, qa4, qa5, model=TONGYI_MAX_MODEL):
+def coach_student(qa1, qa2, qa3, qa4, qa5, model="qwen-max-latest"):
     instruction = """
     你是一位专业的大模型辅导老师，为学员提供个性化的学习建议，帮助他们更好地掌握大模型知识和技能。
     请回答的时候不要过多描述 言简意赅 
@@ -68,7 +66,7 @@ def coach_student(qa1, qa2, qa3, qa4, qa5, model=TONGYI_MAX_MODEL):
         现在正是学习并把握行业发展机遇的好时机。
     """
     user_input = f"""
-    Q：您现在在那个城市，是否在职，所从事的工作是什么？
+    Q：您现在在哪个城市，是否在职，所从事的工作是什么？
     A：{qa1}
     Q：对大模型有多少认知，了解多少原理与技术点？
     A：{qa2}
@@ -87,7 +85,7 @@ def coach_student(qa1, qa2, qa3, qa4, qa5, model=TONGYI_MAX_MODEL):
         {user_input}
     """
     print(prompt)
-    messages = [{"role": "user", "content": prompt},{"role": "user", "content": prompt}]
+    messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
         model=model,
         messages=messages,
@@ -97,33 +95,32 @@ def coach_student(qa1, qa2, qa3, qa4, qa5, model=TONGYI_MAX_MODEL):
     return response.choices[0].message.content
 
 
-# 创建一个 Gradio 界面
 with gr.Blocks() as demo:
-    # 设置标题
     gr.Markdown("# 基于提示工程的学员辅导系统")
-    gr.Markdown("### 为了给同学做一个比较好的入学辅导，请根据如下问题准确进行回答！")
-    question_list = [
-        "1、您现在在那个城市，是否在职，所从事的工作是什么？",
-        "2、对大模型有多少认知，了解多少原理与技术点？",
-        "3、学习大模型的最核心需求是什么？",
-        "4、是否有python编程基础或者其他编程基础，有没有写过代码？",
-        "5、每天能花多少时间用于学习，大致空闲时间点处于什么时段？"
-    ]
-    # 创建输入框，用户可以输入5个问题的答案
-    qa1_input = gr.Textbox(label=question_list[0])
-    qa2_input = gr.Textbox(label=question_list[1])
-    qa3_input = gr.Textbox(label=question_list[2])
-    qa4_input = gr.Textbox(label=question_list[3])
-    qa5_input = gr.Textbox(label=question_list[4])
+    gr.Markdown("### 请准确回答以下问题，为你生成个性化学习建议！")
 
-    # 创建按钮，用户点击后触发辅导逻辑
-    submit = gr.Button("辅导")
+    # 行布局：内部分两列，输入框分栏展示（左3右2，更美观）
+    with gr.Row():
+        # 左列：scale=3（宽度占比3/5），垂直排列3个输入框
+        with gr.Column(scale=3):
+            qa1_input = gr.Textbox(label="1、城市/职业/在职状态")
+            qa2_input = gr.Textbox(label="2、大模型认知程度")
+            qa3_input = gr.Textbox(label="3、核心学习需求")
+        # 右列：scale=2（宽度占比2/5），垂直排列2个输入框
+        with gr.Column(scale=2):
+            qa4_input = gr.Textbox(label="4、编程基础")
+            qa5_input = gr.Textbox(label="5、学习时间/时段")
 
-    # 创建输出框，显示辅导结果
-    result = gr.Textbox(label="辅导结果", placeholder="点击辅导按钮后显示结果", lines=10)
+    # 行布局：按钮居中展示（单独一行，更整洁）
+    with gr.Row():
+        submit = gr.Button("生成辅导建议", variant="primary")  # primary主样式按钮
 
-    # 绑定按钮点击事件到辅导函数
-    submit.click(coach_student, inputs=[qa1_input, qa2_input, qa3_input, qa4_input, qa5_input], outputs=result)
+    # 输出框单独一行，占满整宽
+    result = gr.Textbox(label="个性化辅导结果", placeholder="点击按钮后生成建议...", lines=10)
 
+    # 绑定事件（和原代码一致）
+    submit.click(coach_student,
+                 inputs=[qa1_input, qa2_input, qa3_input, qa4_input, qa5_input],
+                 outputs=result)
 # 启动应用
 demo.launch()
