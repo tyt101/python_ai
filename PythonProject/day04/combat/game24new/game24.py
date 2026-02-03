@@ -8,7 +8,7 @@ from game24_prompt import propose_prompt, value_prompt
 
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
 client = OpenAI(api_key=DASHSCOPE_API_KEY,
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",)
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
 
 #model选用“qwen2.5-coder-3b-instruct”最快，“qwen-coder-plus-lates”其次，"qwen-max/turbo"等极慢
 def chatgpt(prompt, model="qwen2.5-coder-3b-instruct") -> list:
